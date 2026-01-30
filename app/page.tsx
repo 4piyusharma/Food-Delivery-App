@@ -1,15 +1,16 @@
 'use client';
 
 // Main Page Component - Manages the overall application state
-// Handles navigation between Menu, Cart, Checkout, and Order Status views
+// Handles navigation between Menu, Cart, Checkout, Order Status, and Order History views
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import OrderStatus from './components/OrderStatus';
+import OrderHistory from './components/OrderHistory';
 
-type View = 'menu' | 'checkout' | 'order-status';
+type View = 'menu' | 'checkout' | 'order-status' | 'order-history';
 
 interface CartItem {
   menuItem: {
@@ -74,9 +75,21 @@ export default function Home() {
     setView('checkout');
   };
 
+  // Save order ID to localStorage
+  const saveOrderToStorage = (orderId: number) => {
+    if (typeof window !== 'undefined') {
+      const existingOrders = JSON.parse(localStorage.getItem('orderIds') || '[]');
+      if (!existingOrders.includes(orderId)) {
+        existingOrders.push(orderId);
+        localStorage.setItem('orderIds', JSON.stringify(existingOrders));
+      }
+    }
+  };
+
   // Handle order placement
   const handleOrderPlaced = (newOrderId: number) => {
     setOrderId(newOrderId);
+    saveOrderToStorage(newOrderId); // Save to localStorage
     setCart([]); // Clear cart
     setView('order-status');
   };
@@ -92,6 +105,16 @@ export default function Home() {
     setOrderId(null);
   };
 
+  // Handle view order history
+  const handleViewOrderHistory = () => {
+    setView('order-history');
+  };
+
+  // Handle back from order history
+  const handleBackFromHistory = () => {
+    setView('menu');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -99,22 +122,40 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-black">🍕 Food Delivery App</h1>
-            {view === 'menu' && (
-              <button
-                onClick={() => setView('menu')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 relative"
-              >
-                Cart ({cart.length})
-              </button>
-            )}
-            {view === 'order-status' && (
-              <button
-                onClick={handleBackToMenu}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-              >
-                Back to Menu
-              </button>
-            )}
+            <div className="flex gap-2">
+              {view === 'menu' && (
+                <>
+                  <button
+                    onClick={handleViewOrderHistory}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Order History
+                  </button>
+                  <button
+                    onClick={() => setView('menu')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 relative"
+                  >
+                    Cart ({cart.length})
+                  </button>
+                </>
+              )}
+              {view === 'order-status' && (
+                <>
+                  <button
+                    onClick={handleViewOrderHistory}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Order History
+                  </button>
+                  <button
+                    onClick={handleBackToMenu}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  >
+                    Back to Menu
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -156,6 +197,10 @@ export default function Home() {
 
         {view === 'order-status' && orderId && (
           <OrderStatus orderId={orderId} />
+        )}
+
+        {view === 'order-history' && (
+          <OrderHistory onBack={handleBackFromHistory} />
         )}
       </main>
 

@@ -70,6 +70,18 @@ export default function Checkout({ items, onOrderPlaced, onCancel }: CheckoutPro
       const data = await response.json();
 
       if (data.success) {
+        // Save order to localStorage for order history
+        if (typeof window !== 'undefined') {
+          const existingOrders = JSON.parse(localStorage.getItem('orderIds') || '[]');
+          if (!existingOrders.includes(data.data.id)) {
+            existingOrders.push(data.data.id);
+            localStorage.setItem('orderIds', JSON.stringify(existingOrders));
+          }
+          // Also save phone number for easy lookup
+          if (formData.phoneNumber) {
+            localStorage.setItem('lastPhoneNumber', formData.phoneNumber);
+          }
+        }
         onOrderPlaced(data.data.id);
       } else {
         setError(data.error || 'Failed to place order');

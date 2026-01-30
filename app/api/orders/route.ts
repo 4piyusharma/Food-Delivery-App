@@ -111,17 +111,37 @@ export async function POST(request: Request) {
   }
 }
 
-// GET /api/orders - Get all orders (for admin/testing purposes)
-export async function GET() {
+// GET /api/orders - Get all orders or filter by phone number
+// Query params: ?phoneNumber=xxx to filter by phone number
+export async function GET(request: Request) {
   try {
-    const allOrders = await db.select({
-      order: orders,
-      orderItem: orderItems,
-      menuItem: menuItems,
-    })
-      .from(orders)
-      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
-      .leftJoin(menuItems, eq(orderItems.menuItemId, menuItems.id));
+    const { searchParams } = new URL(request.url);
+    const phoneNumber = searchParams.get('phoneNumber');
+
+    let allOrders;
+
+    if (phoneNumber) {
+      // Filter orders by phone number
+      allOrders = await db.select({
+        order: orders,
+        orderItem: orderItems,
+        menuItem: menuItems,
+      })
+        .from(orders)
+        .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
+        .leftJoin(menuItems, eq(orderItems.menuItemId, menuItems.id))
+        .where(eq(orders.phoneNumber, phoneNumber));
+    } else {
+      // Get all orders (for admin/testing purposes)
+      allOrders = await db.select({
+        order: orders,
+        orderItem: orderItems,
+        menuItem: menuItems,
+      })
+        .from(orders)
+        .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
+        .leftJoin(menuItems, eq(orderItems.menuItemId, menuItems.id));
+    }
 
     // Group order items by order
     const ordersMap = new Map();
